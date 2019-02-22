@@ -8,6 +8,9 @@
 
 namespace Marvil\Transfer;
 
+use Aws\S3\S3Client;
+use Illuminate\Database\Eloquent\Collection;
+use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use App\Demat\Helpers\errorManager;
 use App\Demat\Helpers\fileLogManager;
 use App\Models\ErrorsModel;
@@ -19,6 +22,8 @@ use League\Flysystem\Adapter\Ftp as FtpAdapter;
 use App\Models\SourcesModel;
 use League\Flysystem\Filesystem;
 use App\Demat\Helpers\sourceFileSystem;
+use MicrosoftAzure\Storage\Blob\BlobRestProxy;
+use League\Flysystem\AzureBlobStorage\AzureBlobStorageAdapter as AzureBlobStorageAdapter;
 
 class Transfer
 {
@@ -30,6 +35,12 @@ class Transfer
         case 'sftp':
             $adapter = SftpAdapter::class;
             break;
+        case 'azbsa':
+            $adapter = AzureBlobStorageAdapter::class;
+            break;
+        case 'aws':
+            $adapter = AwsS3Adapter::class;
+            break;
         }
         return $adapter;
     }
@@ -40,7 +51,34 @@ class Transfer
      *
      */
 
-    public static function createSourceFileSystems(array $sourceNames) {
+    public static function createSourceFileSystems($id,$driver, $host, $username,$password,$root, $timeout) {
+        $sourceFileSystems = array();
+        $sources = new Collection(['id'=>$id, 'driver' => $driver, 'host' => $host, 'username' => $username, 'password' => $password, 'root'=>$root, 'timeout'=>$timeout ]);
+        foreach ($sources as $source){
+            $adapter = Transfer::getAdapter($source->getAttribute('type'));
+
+            $filesystem = new Filesystem(
+                new $adapter(
+                    array(
+                        'source_id' =>$source->getAttribute('id'),
+                        'driver' => $source->getAttribute('type'),
+                        'host' => $source->getAttribute('server'),
+                        'username' => $source->getAttribute('username'),
+                        'password' => $source->getAttribute('password'),
+                        'root' => $source->getAttribute('path'),
+                        'timeout' => $source->getAttribute('timeout'),
+                    )
+                )
+            );
+            $sourceFileSystem = new sourceFileSystem($source->getAttribute('id'),$source->getAttribute('name'),$filesystem);
+
+            $sourceFileSystems[] = $sourceFileSystem;
+
+        }
+        dd($filesystem);
+        return $sourceFileSystems;
+    }
+    public static function createSourceFileSystems2(array $sourceNames) {
 
         $sourceFileSystems = array();
 

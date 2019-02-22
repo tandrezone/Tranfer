@@ -7,5 +7,14 @@
             "email": "tiago.andre@marvil56.com"
         }
     ],
-    "require": {}
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Marvil\\Transfer\\": "src/"
+        }
+    }
 }
+
+
+
+
