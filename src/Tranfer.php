@@ -27,6 +27,11 @@ use League\Flysystem\AzureBlobStorage\AzureBlobStorageAdapter as AzureBlobStorag
 
 class Transfer
 {
+    /**
+     * @param $type driver or type of connection
+     *
+     * @return the adpter class
+     */
     public static function getAdapter($type){
         switch ($type){
         case 'ftp':
@@ -46,39 +51,44 @@ class Transfer
     }
 
     /**
-     * Get the sources from the database and generate sourceFilesystems to manage the sftp connections
-     * @return sourceFileSystem
+     * @param $id the filystem id
+     * @param $driver the filesystem driver
+     * @param $host the filesystem host
+     * @param $username the filesystem username
+     * @param $password the filesystem password
+     * @param $root the filesystem root
+     * @param $timeout the filesystem paassword
      *
+     * @return Filesystem
      */
-
-    public static function createSourceFileSystems($id,$driver, $host, $username,$password,$root, $timeout) {
+    public static function createSourceFileSystem($id, $driver, $host, $username,$password,$root, $timeout) {
         $sourceFileSystems = array();
-        $sources = new Collection(['id'=>$id, 'driver' => $driver, 'host' => $host, 'username' => $username, 'password' => $password, 'root'=>$root, 'timeout'=>$timeout ]);
-        foreach ($sources as $source){
-            $adapter = Transfer::getAdapter($source->getAttribute('type'));
+        $source = ['id'=>$id, 'driver' => $driver, 'host' => $host, 'username' => $username, 'password' => $password, 'root'=>$root, 'timeout'=>$timeout ];
+
+            $adapter = Transfer::getAdapter($driver);
 
             $filesystem = new Filesystem(
                 new $adapter(
                     array(
-                        'source_id' =>$source->getAttribute('id'),
-                        'driver' => $source->getAttribute('type'),
-                        'host' => $source->getAttribute('server'),
-                        'username' => $source->getAttribute('username'),
-                        'password' => $source->getAttribute('password'),
-                        'root' => $source->getAttribute('path'),
-                        'timeout' => $source->getAttribute('timeout'),
+                        'source_id' =>$id,
+                        'driver' =>$driver,
+                        'host' => $host,
+                        'username' => $username,
+                        'password' => $password,
+                        'root' => $root,
+                        'timeout' => $timeout,
                     )
                 )
             );
-            $sourceFileSystem = new sourceFileSystem($source->getAttribute('id'),$source->getAttribute('name'),$filesystem);
-
-            $sourceFileSystems[] = $sourceFileSystem;
-
-        }
-        dd($filesystem);
-        return $sourceFileSystems;
+        return $filesystem;
     }
-    public static function createSourceFileSystems2(array $sourceNames) {
+
+    /**
+     * @param array $sourceNames
+     *
+     * @return file paths or Filelog
+     */
+    public static function createSourceFileSystems(array $sourceNames) {
 
         $sourceFileSystems = array();
 
